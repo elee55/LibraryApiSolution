@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using LibraryApi.Domain;
 using LibraryApi.Services;
@@ -36,8 +38,26 @@ namespace LibraryApi
             services.AddTransient<ISystemTime, SystemTime>();
             
             services.AddDbContext<LibraryDataContext>(options =>
-                options.UseSqlServer(@"server=.\sqlexpress;database=library;integrated security=true") // Need to fix it later
+                options.UseSqlServer(Configuration.GetConnectionString("LibraryDatabase"))
             );
+
+            services.AddSwaggerGen(c =>
+            {
+                c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo()
+                {
+                    Title = "Libraray API",
+                    Version = "1.0",
+                    Contact = new Microsoft.OpenApi.Models.OpenApiContact
+                    {
+                        Name = "Ellis Elee",
+                        Email = "ellis_elee_2@progressive.com"
+                    },
+                    Description = "An Api for BES 100"
+                });
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -49,6 +69,13 @@ namespace LibraryApi
             }
 
             app.UseRouting();
+            
+            app.UseSwagger();
+            app.UseSwaggerUI(c =>
+            {
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Library API");
+                c.RoutePrefix = "";
+            });
 
             app.UseAuthorization();
 
